@@ -1,1 +1,1 @@
-Plug 'mechatroner/rainbow_csv', {'for': 'csv'}
+Plug 'vim-scripts/csv.vim', {'for': 'csv'}
