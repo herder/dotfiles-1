@@ -1,4 +1,7 @@
 " Use Vim settings, rather than Vi settings (much better!).
+
+
+
 " This must be first, because it changes other options as a side effect.
 set nocompatible
 
@@ -113,4 +116,4 @@ set ignorecase      " Ignore case when searching...
 set smartcase       " ...unless we type a capital
 
 " ================ Custom Settings ========================
-so ~/.yadr/vim/settings.vim
+so ~/.vim/settings.vim
