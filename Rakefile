@@ -16,7 +16,6 @@ task :install => [:submodule_init, :submodules] do
   install_files(Dir.glob('irb/*')) if want_to_install?('irb/pry configs (more colorful)')
   install_files(Dir.glob('ruby/*')) if want_to_install?('rubygems config (faster/no docs)')
   install_files(Dir.glob('ctags/*')) if want_to_install?('ctags config (better js/ruby support)')
-  install_files(Dir.glob('vimify/*')) if want_to_install?('vimification of command line tools')
 
   Rake::Task["install_prezto"].execute
 
