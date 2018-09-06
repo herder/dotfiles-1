@@ -18,7 +18,8 @@ task :install => [:submodule_init, :submodules] do
   install_files(Dir.glob('ctags/*')) if want_to_install?('ctags config (better js/ruby support)')
 
   Rake::Task["install_prezto"].execute
-
+  Rake::Task["install_plug"].execute
+  
   install_fonts
 
   install_term_theme if RUBY_PLATFORM.downcase.include?("darwin")
