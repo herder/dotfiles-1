@@ -9,20 +9,14 @@ task :install => [:submodule_init, :submodules] do
   puts "======================================================"
   puts
 
-  install_rvm_binstubs
-
   # this has all the runcoms from this directory.
-  install_files(Dir.glob('git/*')) if want_to_install?('git configs (color, aliases)')
   install_files(Dir.glob('irb/*')) if want_to_install?('irb/pry configs (more colorful)')
-  install_files(Dir.glob('ruby/*')) if want_to_install?('rubygems config (faster/no docs)')
-  install_files(Dir.glob('ctags/*')) if want_to_install?('ctags config (better js/ruby support)')
 
   Rake::Task["install_prezto"].execute
   Rake::Task["install_plug"].execute
-  
+
   install_fonts
 
-  install_term_theme if RUBY_PLATFORM.downcase.include?("darwin")
 
   run_bundle_config
 
@@ -37,7 +31,6 @@ end
 
 desc 'Updates the installation'
 task :update do
-  Rake::Task["vundle_migration"].execute if needs_migration_to_vundle?
   Rake::Task["install"].execute
   #TODO: for now, we do the same as install. But it would be nice
   #not to clobber zsh files
@@ -63,25 +56,6 @@ task :submodules do
     }
     puts
   end
-end
-
-desc "Performs migration from pathogen to vundle"
-task :vundle_migration do
-  puts "======================================================"
-  puts "Migrating from pathogen to vundle vim plugin manager. "
-  puts "This will move the old .vim/bundle directory to"
-  puts ".vim/bundle.old and replacing all your vim plugins with"
-  puts "the standard set of plugins. You will then be able to "
-  puts "manage your vim's plugin configuration by editing the "
-  puts "file .vim/vundles.vim"
-  puts "======================================================"
-
-  Dir.glob(File.join('vim', 'bundle','**')) do |sub_path|
-    run %{git config -f #{File.join('.git', 'config')} --remove-section submodule.#{sub_path}}
-    # `git rm --cached #{sub_path}`
-    FileUtils.rm_rf(File.join('.git', 'modules', sub_path))
-  end
-  FileUtils.mv(File.join('vim','bundle'), File.join('vim', 'bundle.old'))
 end
 
 desc "Runs plugin installer in a clean vim environment"
@@ -115,27 +89,6 @@ def number_of_cores
   cores.to_i
 end
 
-def run_bundle_config
-  return unless system("which bundle")
-
-  bundler_jobs = number_of_cores - 1
-  puts "======================================================"
-  puts "Configuring Bundlers for parallel gem installation"
-  puts "======================================================"
-  run %{ bundle config --global jobs #{bundler_jobs} }
-  puts
-end
-
-def install_rvm_binstubs
-  puts "======================================================"
-  puts "Installing RVM Bundler support. Never have to type"
-  puts "bundle exec again! Please use bundle --binstubs and RVM"
-  puts "will automatically use those bins after cd'ing into dir."
-  puts "======================================================"
-  run %{ chmod +x $rvm_path/hooks/after_cd_bundler }
-  puts
-end
-
 def install_fonts
   puts "======================================================"
   puts "Installing patched fonts for Powerline/Lightline."
@@ -143,59 +96,6 @@ def install_fonts
   run %{ cp -f $HOME/.yadr/fonts/* $HOME/Library/Fonts } if RUBY_PLATFORM.downcase.include?("darwin")
   run %{ mkdir -p ~/.fonts && cp ~/.yadr/fonts/* ~/.fonts && fc-cache -vf ~/.fonts } if RUBY_PLATFORM.downcase.include?("linux")
   puts
-end
-
-def install_term_theme
-  puts "======================================================"
-  puts "Installing iTerm2 solarized theme."
-  puts "======================================================"
-  run %{ /usr/libexec/PlistBuddy -c "Add :'Custom Color Presets':'Solarized Light' dict" ~/Library/Preferences/com.googlecode.iterm2.plist }
-  run %{ /usr/libexec/PlistBuddy -c "Merge 'iTerm2/Solarized Light.itermcolors' :'Custom Color Presets':'Solarized Light'" ~/Library/Preferences/com.googlecode.iterm2.plist }
-  run %{ /usr/libexec/PlistBuddy -c "Add :'Custom Color Presets':'Solarized Dark' dict" ~/Library/Preferences/com.googlecode.iterm2.plist }
-  run %{ /usr/libexec/PlistBuddy -c "Merge 'iTerm2/Solarized Dark.itermcolors' :'Custom Color Presets':'Solarized Dark'" ~/Library/Preferences/com.googlecode.iterm2.plist }
-
-  # If iTerm2 is not installed or has never run, we can't autoinstall the profile since the plist is not there
-  if !File.exists?(File.join(ENV['HOME'], '/Library/Preferences/com.googlecode.iterm2.plist'))
-    puts "======================================================"
-    puts "To make sure your profile is using the solarized theme"
-    puts "Please check your settings under:"
-    puts "Preferences> Profiles> [your profile]> Colors> Load Preset.."
-    puts "======================================================"
-    return
-  end
-
-  # Ask the user which theme he wants to install
-  message = "Which theme would you like to apply to your iTerm2 profile?"
-  color_scheme = ask message, iTerm_available_themes
-
-  return if color_scheme == 'None'
-
-  color_scheme_file = File.join('iTerm2', "#{color_scheme}.itermcolors")
-
-  # Ask the user on which profile he wants to install the theme
-  profiles = iTerm_profile_list
-  message = "I've found #{profiles.size} #{profiles.size>1 ? 'profiles': 'profile'} on your iTerm2 configuration, which one would you like to apply the Solarized theme to?"
-  profiles << 'All'
-  selected = ask message, profiles
-
-  if selected == 'All'
-    (profiles.size-1).times { |idx| apply_theme_to_iterm_profile_idx idx, color_scheme_file }
-  else
-    apply_theme_to_iterm_profile_idx profiles.index(selected), color_scheme_file
-  end
-end
-
-def iTerm_available_themes
-   Dir['iTerm2/*.itermcolors'].map { |value| File.basename(value, '.itermcolors')} << 'None'
-end
-
-def iTerm_profile_list
-  profiles=Array.new
-  begin
-    profiles <<  %x{ /usr/libexec/PlistBuddy -c "Print :'New Bookmarks':#{profiles.size}:Name" ~/Library/Preferences/com.googlecode.iterm2.plist 2>/dev/null}
-  end while $?.exitstatus==0
-  profiles.pop
-  profiles
 end
 
 def ask(message, values)
