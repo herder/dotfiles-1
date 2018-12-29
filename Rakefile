@@ -18,7 +18,7 @@ task :install => [:submodule_init, :submodules] do
   install_fonts
 
 
-  run_bundle_config
+  # run_bundle_config
 
   success_msg("installed")
 end
